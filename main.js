@@ -1,54 +1,52 @@
-//-----------------------------------------------------------------------------------------------arrays y variables
-const cursosDisponibles = ["JavaScript Básico", "Desarrollo Web", "Python para Principiantes", "Diseño UX/UI"];
-let cursoElegido = "";
-let nombreUsuario = "";
-let inscripcionConfirmada = false;
+const form = document.getElementById('productForm');
+const cartSection = document.getElementById('cart');
+let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
-//-----------------------------------------------------------------------------------------------FUNCIONES 
+function renderCart() {
+cartSection.innerHTML = '';
+cart.forEach((product, index) => {
+    const card = document.createElement('div');
+    card.classList.add('card');
 
-//-------------------------------------------solicitar nombre
-function solicitarNombre() {
-nombreUsuario = prompt("¡Bienvenido al simulador de inscripción!\nPor favor, ingresá tu nombre:");
-console.log("Nombre ingresado:", nombreUsuario);
+    card.innerHTML = `
+    <h3>${product.name}</h3>
+    <p>Precio: $${product.price.toFixed(2)}</p>
+    <button onclick="removeItem(${index})">Eliminar</button>
+    `;
+
+    cartSection.appendChild(card);
+});
 }
 
-//--------------------------------------------mostrar cursos
-function mostrarYSeleccionarCurso() {
-let mensaje = "Cursos disponibles:\n";
+function addProduct(e) {
+e.preventDefault();
+const name = document.getElementById('productName').value.trim();
+const price = parseFloat(document.getElementById('productPrice').value);
 
-for (let i = 0; i < cursosDisponibles.length; i++) {
-    mensaje += (i + 1) + ". " + cursosDisponibles[i] + "\n";
+if (!name || isNaN(price)) return;
+
+const newProduct = { name, price };
+cart.push(newProduct);
+localStorage.setItem('cart', JSON.stringify(cart));
+renderCart();
+form.reset();
 }
 
-let seleccion = parseInt(prompt(`${mensaje}\nSeleccioná un curso (1 a ${cursosDisponibles.length}):`)) - 1;
-
-if (seleccion >= 0 && seleccion < cursosDisponibles.length) {
-    cursoElegido = cursosDisponibles[seleccion];
-    console.log("Curso seleccionado:", cursoElegido);
-} else {
-    alert("Selección inválida. Por favor, recargá la página e intentá de nuevo.");
-}
+function removeItem(index) {
+cart.splice(index, 1);
+localStorage.setItem('cart', JSON.stringify(cart));
+renderCart();
 }
 
-//------------------------------------------confirmar inscripción
-function confirmarInscripcion() {
-if (cursoElegido) {
-    let confirmacion = confirm(
-    `Hola ${nombreUsuario}, estás por inscribirte en el curso:\n"${cursoElegido}".\n\n¿Deseás confirmar la inscripción?`
-    );
+form.addEventListener('submit', addProduct);
+renderCart();
 
-    if (confirmacion) {
-    inscripcionConfirmada = true;
-    alert("¡Inscripción confirmada!\nNos comunicaremos con vos a la brevedad.");
-    console.log(`${nombreUsuario} se ha inscripto en: ${cursoElegido}`);
-    } else {
-    alert("Has cancelado la inscripción.");
-    console.log(`${nombreUsuario} canceló la inscripción.`);
-    }
-}
-}
+const clearCartBtn = document.getElementById('clearCartBtn');
 
-//-------------------------------------------------------------------------------------------LLAMADAS A FUNCIONES
-solicitarNombre();
-mostrarYSeleccionarCurso();
-confirmarInscripcion();
+clearCartBtn.addEventListener('click', () => {
+if (confirm("¿Estás seguro de que quieres vaciar el carrito?")) {
+    cart = [];
+    localStorage.removeItem('cart');
+    renderCart();
+}
+});
