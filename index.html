@@ -2,24 +2,28 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Carrito de Compras</title>
-<link rel="stylesheet" href="/CSS/estilo.css" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Home Banking Simulado</title>
+<link rel="stylesheet" href="./CSS/estilo.css">
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
-<h1>Simulador de Carrito</h1>
 
-<form id="productForm">
-    <input type="text" id="productName" placeholder="Ingrese Producto" required />
-    <input type="number" id="productPrice" placeholder="Ingrese Precio" required />
-    <button type="submit">Agregar</button>
-</form>
+    <div id="login-container"></div>
 
 
+<div id="home-container" style="display: none;">
+    <h2><span id="nombre-usuario"></span></h2>
+    <p>Tu saldo es: <span id="saldo"></span> ARS</p>
+    <button onclick="mostrarDeposito()">Depositar</button>
+    <button onclick="mostrarExtraccion()">Retirar</button>
+    <button onclick="mostrarTransferencia()">Transferir</button>
+    <button onclick="mostrarHistorial()">Ver movimientos</button>
+    <button onclick="cerrarSesion()">Cerrar sesión</button>
 
-<section id="cart"></section>
-
-<button id="clearCartBtn">Vaciar carrito</button>
+    <div id="acciones"></div>
+</div>
 
 <script src="main.js"></script>
 </body>

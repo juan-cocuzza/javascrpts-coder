@@ -1,52 +1,378 @@
-const form = document.getElementById('productForm');
-const cartSection = document.getElementById('cart');
-let cart = JSON.parse(localStorage.getItem('cart')) || [];
+// Datos por defecto, usuario inicial para primera carga
+const usuarioDefault = {
+    usuario: "juanp",
+    password: "1234",
+    nombre: "Juan Pérez",
+    saldo: 15000,
+    movimientos: [
+        { tipo: "Depósito", monto: 15000, fecha: "2025-05-27" }
+    ],
+    cuentasDestino: [
+        { alias: "maria.ahorro", nombre: "Maria López" },
+        { alias: "carlos.sueldo", nombre: "Carlos Gómez" }
+    ]
+};
 
-function renderCart() {
-cartSection.innerHTML = '';
-cart.forEach((product, index) => {
-    const card = document.createElement('div');
-    card.classList.add('card');
+// Elementos DOM
+const loginContainer = document.getElementById("login-container");
+const homeContainer = document.getElementById("home-container");
+const accionesContainer = document.getElementById("acciones");
 
-    card.innerHTML = `
-    <h3>${product.name}</h3>
-    <p>Precio: $${product.price.toFixed(2)}</p>
-    <button onclick="removeItem(${index})">Eliminar</button>
+// Variable global para el usuario activo en sesión
+let usuarioActivo = null;
+
+// Función para guardar usuario en localStorage
+function guardarUsuarioEnStorage(usuarioObj) {
+    localStorage.setItem("usuarioDatos", JSON.stringify(usuarioObj));
+}
+
+// Función para obtener usuario de localStorage
+function obtenerUsuarioDeStorage() {
+    const datos = localStorage.getItem("usuarioDatos");
+    if (datos) {
+        return JSON.parse(datos);
+    } else {
+        // Si no hay datos en storage, guardamos el default y retornamos
+        guardarUsuarioEnStorage(usuarioDefault);
+        return usuarioDefault;
+    }
+}
+
+// Iniciar con usuario cargado
+usuarioActivo = obtenerUsuarioDeStorage();
+
+// Función para iniciar sesión
+function iniciarSesion() {
+    document.getElementById("nombre-usuario").textContent = usuarioActivo.nombre;
+    document.getElementById("saldo").textContent = usuarioActivo.saldo.toFixed(2);
+
+    loginContainer.style.display = "none";
+    homeContainer.style.display = "block";
+
+    accionesContainer.innerHTML = "";
+}
+
+// Función para cerrar sesión
+function cerrarSesion() {
+    document.getElementById("usuario").value = "";
+    document.getElementById("password").value = "";
+
+    homeContainer.style.display = "none";
+    loginContainer.style.display = "block";
+
+    accionesContainer.innerHTML = "";
+
+    Swal.fire({
+        icon: "info",
+        title: "Sesión cerrada",
+        text: "Has salido correctamente.",
+    });
+}
+
+// Mostrar formulario de registro
+function mostrarRegistro() {
+    loginContainer.innerHTML = `
+        <h2>Registro</h2>
+        <form id="registro-form">
+            <input type="text" id="reg-usuario" placeholder="Usuario" required />
+            <input type="password" id="reg-password" placeholder="Contraseña" required />
+            <input type="text" id="reg-nombre" placeholder="Nombre completo" required />
+            <button type="submit">Registrarse</button>
+        </form>
+        <p>¿Ya tenés cuenta? <a href="#" id="mostrar-login">Iniciar sesión</a></p>
     `;
 
-    cartSection.appendChild(card);
-});
+    const registroForm = document.getElementById("registro-form");
+    registroForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        registrarUsuario();
+    });
+
+    document.getElementById("mostrar-login").addEventListener("click", function (e) {
+        e.preventDefault();
+        mostrarLogin();
+    });
 }
 
-function addProduct(e) {
-e.preventDefault();
-const name = document.getElementById('productName').value.trim();
-const price = parseFloat(document.getElementById('productPrice').value);
+// Mostrar formulario de login
+function mostrarLogin() {
+    loginContainer.innerHTML = `
+        <h2>Iniciar sesión</h2>
+        <form id="login-form">
+            <input type="text" id="usuario" placeholder="Usuario" required />
+            <input type="password" id="password" placeholder="Contraseña" required />
+            <button type="submit">Ingresar</button>
+        </form>
+        <p>¿No tenés cuenta? <a href="#" id="mostrar-registro">Registrate</a></p>
+    `;
 
-if (!name || isNaN(price)) return;
+    const loginForm = document.getElementById("login-form");
 
-const newProduct = { name, price };
-cart.push(newProduct);
-localStorage.setItem('cart', JSON.stringify(cart));
-renderCart();
-form.reset();
+    loginForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const usuarioInput = document.getElementById("usuario").value.trim();
+        const passwordInput = document.getElementById("password").value.trim();
+
+        if (usuarioInput === usuarioActivo.usuario && passwordInput === usuarioActivo.password) {
+            iniciarSesion();
+        } else {
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: "Usuario o contraseña incorrectos",
+            });
+        }
+    });
+
+    document.getElementById("mostrar-registro").addEventListener("click", function (e) {
+        e.preventDefault();
+        mostrarRegistro();
+    });
 }
 
-function removeItem(index) {
-cart.splice(index, 1);
-localStorage.setItem('cart', JSON.stringify(cart));
-renderCart();
+// Función para registrar usuario y guardar en localStorage
+function registrarUsuario() {
+    const usuario = document.getElementById("reg-usuario").value.trim();
+    const password = document.getElementById("reg-password").value.trim();
+    const nombre = document.getElementById("reg-nombre").value.trim();
+
+    if (!usuario || !password || !nombre) {
+        Swal.fire("Error", "Completá todos los campos", "error");
+        return;
+    }
+
+    usuarioActivo = {
+        usuario,
+        password,
+        nombre,
+        saldo: 0,
+        movimientos: [],
+        cuentasDestino: usuarioDefault.cuentasDestino,
+    };
+
+    guardarUsuarioEnStorage(usuarioActivo);
+
+    Swal.fire("Registro exitoso", "Ya podés iniciar sesión", "success");
+    mostrarLogin();
 }
 
-form.addEventListener('submit', addProduct);
-renderCart();
-
-const clearCartBtn = document.getElementById('clearCartBtn');
-
-clearCartBtn.addEventListener('click', () => {
-if (confirm("¿Estás seguro de que quieres vaciar el carrito?")) {
-    cart = [];
-    localStorage.removeItem('cart');
-    renderCart();
+// Función para actualizar saldo en home
+function actualizarSaldoYMovimientos() {
+    document.getElementById("saldo").textContent = usuarioActivo.saldo.toFixed(2);
 }
+
+// Mostrar formulario para depósito
+function mostrarDeposito() {
+    accionesContainer.innerHTML = `
+        <h3>Depositar dinero</h3>
+        <input type="number" id="monto-deposito" placeholder="Monto a depositar" />
+        <button onclick="realizarDeposito()">Confirmar depósito</button>
+    `;
+}
+
+// Realizar depósito
+function realizarDeposito() {
+    const monto = parseFloat(document.getElementById("monto-deposito").value);
+
+    if (isNaN(monto) || monto <= 0) {
+        Swal.fire({
+            icon: "warning",
+            title: "Monto inválido",
+            text: "Por favor ingresa un monto mayor a 0",
+        });
+        return;
+    }
+
+    usuarioActivo.saldo += monto;
+    actualizarSaldoYMovimientos();
+
+    const fecha = new Date().toISOString().split("T")[0];
+    usuarioActivo.movimientos.push({
+        tipo: "Depósito",
+        monto,
+        fecha,
+    });
+
+    guardarUsuarioEnStorage(usuarioActivo);
+
+    Swal.fire({
+        icon: "success",
+        title: "¡Depósito exitoso!",
+        text: `Se depositaron $${monto.toFixed(2)} ARS`,
+    });
+
+    accionesContainer.innerHTML = "";
+}
+
+// Mostrar formulario para extracción
+function mostrarExtraccion() {
+    accionesContainer.innerHTML = `
+        <h3>Retirar dinero</h3>
+        <input type="number" id="monto-extraccion" placeholder="Monto a retirar" />
+        <button onclick="realizarExtraccion()">Confirmar retiro</button>
+    `;
+}
+
+// Realizar extracción
+function realizarExtraccion() {
+    const monto = parseFloat(document.getElementById("monto-extraccion").value);
+
+    if (isNaN(monto) || monto <= 0) {
+        Swal.fire({
+            icon: "warning",
+            title: "Monto inválido",
+            text: "Ingresá un monto mayor a 0",
+        });
+        return;
+    }
+
+    if (monto > usuarioActivo.saldo) {
+        Swal.fire({
+            icon: "error",
+            title: "Fondos insuficientes",
+            text: "No tenés saldo suficiente para retirar ese monto",
+        });
+        return;
+    }
+
+    usuarioActivo.saldo -= monto;
+    actualizarSaldoYMovimientos();
+
+    const fecha = new Date().toISOString().split("T")[0];
+    usuarioActivo.movimientos.push({
+        tipo: "Extracción",
+        monto,
+        fecha,
+    });
+
+    guardarUsuarioEnStorage(usuarioActivo);
+
+    Swal.fire({
+        icon: "success",
+        title: "Retiro exitoso",
+        text: `Se retiraron $${monto.toFixed(2)} ARS`,
+    });
+
+    accionesContainer.innerHTML = "";
+}
+
+// Mostrar historial de movimientos
+function mostrarHistorial() {
+    if (usuarioActivo.movimientos.length === 0) {
+        accionesContainer.innerHTML = "<p>No hay movimientos registrados.</p>";
+        return;
+    }
+
+    let html = `
+        <h3>Historial de movimientos</h3>
+        <table border="1" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th>Tipo</th>
+                    <th>Monto</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    usuarioActivo.movimientos.forEach(mov => {
+        html += `
+            <tr>
+                <td>${mov.tipo}</td>
+                <td>$${mov.monto.toFixed(2)}</td>
+                <td>${mov.fecha}</td>
+            </tr>
+        `;
+    });
+
+    html += `
+            </tbody>
+        </table>
+    `;
+
+    accionesContainer.innerHTML = html;
+}
+// Cuentas destino fijas (para todos los usuarios)
+const cuentasDestinoFijas = [
+    { alias: "maria.ahorro", nombre: "Maria López" },
+    { alias: "carlos.sueldo", nombre: "Carlos Gómez" }
+];
+
+  // Mostrar formulario transferencia
+function mostrarTransferencia() {
+    let options = cuentasDestinoFijas
+    .map(cuenta => `<option value="${cuenta.alias}">${cuenta.nombre} (${cuenta.alias})</option>`)
+    .join("");
+
+    accionesContainer.innerHTML = `
+    <h3>Transferir dinero</h3>
+    <label for="alias-destino">Cuenta destino:</label>
+    <select id="alias-destino">
+        <option value="" disabled selected>Seleccione una cuenta</option>
+        ${options}
+    </select>
+    <input type="number" id="monto-transferencia" placeholder="Monto a transferir" />
+    <button onclick="realizarTransferencia()">Confirmar transferencia</button>
+    `;
+}
+
+  // Realizar transferencia
+function realizarTransferencia() {
+    const aliasDestino = document.getElementById("alias-destino").value;
+    const monto = parseFloat(document.getElementById("monto-transferencia").value);
+
+    if (!aliasDestino) {
+    Swal.fire({
+        icon: "warning",
+        title: "Seleccione una cuenta destino",
+        text: "Por favor elija una cuenta para transferir."
+    });
+    return;
+    }
+
+    if (isNaN(monto) || monto <= 0) {
+    Swal.fire({
+        icon: "warning",
+        title: "Monto inválido",
+        text: "Ingrese un monto mayor a 0."
+    });
+    return;
+    }
+
+    if (monto > usuarioActivo.saldo) {
+    Swal.fire({
+        icon: "error",
+        title: "Fondos insuficientes",
+        text: "No tiene saldo suficiente para realizar la transferencia."
+    });
+    return;
+    }
+
+    // Descontar saldo del usuario activo
+    usuarioActivo.saldo -= monto;
+    actualizarSaldoYMovimientos();
+
+    // Registrar movimiento
+    const fecha = new Date().toISOString().split("T")[0];
+    usuarioActivo.movimientos.push({
+    tipo: `Transferencia a ${aliasDestino}`,
+    monto: monto,
+    fecha: fecha,
+    });
+
+    guardarUsuarioEnStorage(usuarioActivo);
+
+    Swal.fire({
+    icon: "success",
+    title: "Transferencia realizada",
+    text: `Se transfirieron $${monto.toFixed(2)} ARS a la cuenta ${aliasDestino}.`
+    });
+
+    accionesContainer.innerHTML = "";
+}
+
+// Esperar a que el DOM cargue para mostrar login
+window.addEventListener("DOMContentLoaded", () => {
+    mostrarLogin();
 });
