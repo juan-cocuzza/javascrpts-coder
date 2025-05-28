@@ -1,4 +1,4 @@
-// Datos por defecto, usuario inicial para primera carga
+
 const usuarioDefault = {
     usuario: "juanp",
     password: "1234",
@@ -13,35 +13,32 @@ const usuarioDefault = {
     ]
 };
 
-// Elementos DOM
 const loginContainer = document.getElementById("login-container");
 const homeContainer = document.getElementById("home-container");
 const accionesContainer = document.getElementById("acciones");
 
-// Variable global para el usuario activo en sesión
 let usuarioActivo = null;
 
-// Función para guardar usuario en localStorage
+
 function guardarUsuarioEnStorage(usuarioObj) {
     localStorage.setItem("usuarioDatos", JSON.stringify(usuarioObj));
 }
 
-// Función para obtener usuario de localStorage
+
 function obtenerUsuarioDeStorage() {
     const datos = localStorage.getItem("usuarioDatos");
     if (datos) {
         return JSON.parse(datos);
     } else {
-        // Si no hay datos en storage, guardamos el default y retornamos
         guardarUsuarioEnStorage(usuarioDefault);
         return usuarioDefault;
     }
 }
 
-// Iniciar con usuario cargado
+
 usuarioActivo = obtenerUsuarioDeStorage();
 
-// Función para iniciar sesión
+
 function iniciarSesion() {
     document.getElementById("nombre-usuario").textContent = usuarioActivo.nombre;
     document.getElementById("saldo").textContent = usuarioActivo.saldo.toFixed(2);
@@ -52,7 +49,6 @@ function iniciarSesion() {
     accionesContainer.innerHTML = "";
 }
 
-// Función para cerrar sesión
 function cerrarSesion() {
     document.getElementById("usuario").value = "";
     document.getElementById("password").value = "";
@@ -69,7 +65,6 @@ function cerrarSesion() {
     });
 }
 
-// Mostrar formulario de registro
 function mostrarRegistro() {
     loginContainer.innerHTML = `
         <h2>Registro</h2>
@@ -94,7 +89,6 @@ function mostrarRegistro() {
     });
 }
 
-// Mostrar formulario de login
 function mostrarLogin() {
     loginContainer.innerHTML = `
         <h2>Iniciar sesión</h2>
@@ -130,7 +124,7 @@ function mostrarLogin() {
     });
 }
 
-// Función para registrar usuario y guardar en localStorage
+
 function registrarUsuario() {
     const usuario = document.getElementById("reg-usuario").value.trim();
     const password = document.getElementById("reg-password").value.trim();
@@ -156,12 +150,12 @@ function registrarUsuario() {
     mostrarLogin();
 }
 
-// Función para actualizar saldo en home
+
 function actualizarSaldoYMovimientos() {
     document.getElementById("saldo").textContent = usuarioActivo.saldo.toFixed(2);
 }
 
-// Mostrar formulario para depósito
+
 function mostrarDeposito() {
     accionesContainer.innerHTML = `
         <h3>Depositar dinero</h3>
@@ -170,7 +164,7 @@ function mostrarDeposito() {
     `;
 }
 
-// Realizar depósito
+
 function realizarDeposito() {
     const monto = parseFloat(document.getElementById("monto-deposito").value);
 
@@ -204,7 +198,7 @@ function realizarDeposito() {
     accionesContainer.innerHTML = "";
 }
 
-// Mostrar formulario para extracción
+
 function mostrarExtraccion() {
     accionesContainer.innerHTML = `
         <h3>Retirar dinero</h3>
@@ -213,7 +207,7 @@ function mostrarExtraccion() {
     `;
 }
 
-// Realizar extracción
+
 function realizarExtraccion() {
     const monto = parseFloat(document.getElementById("monto-extraccion").value);
 
@@ -256,7 +250,7 @@ function realizarExtraccion() {
     accionesContainer.innerHTML = "";
 }
 
-// Mostrar historial de movimientos
+
 function mostrarHistorial() {
     if (usuarioActivo.movimientos.length === 0) {
         accionesContainer.innerHTML = "<p>No hay movimientos registrados.</p>";
@@ -293,13 +287,13 @@ function mostrarHistorial() {
 
     accionesContainer.innerHTML = html;
 }
-// Cuentas destino fijas (para todos los usuarios)
+
 const cuentasDestinoFijas = [
     { alias: "maria.ahorro", nombre: "Maria López" },
     { alias: "carlos.sueldo", nombre: "Carlos Gómez" }
 ];
 
-  // Mostrar formulario transferencia
+
 function mostrarTransferencia() {
     let options = cuentasDestinoFijas
     .map(cuenta => `<option value="${cuenta.alias}">${cuenta.nombre} (${cuenta.alias})</option>`)
@@ -317,7 +311,7 @@ function mostrarTransferencia() {
     `;
 }
 
-  // Realizar transferencia
+
 function realizarTransferencia() {
     const aliasDestino = document.getElementById("alias-destino").value;
     const monto = parseFloat(document.getElementById("monto-transferencia").value);
@@ -349,20 +343,16 @@ function realizarTransferencia() {
     return;
     }
 
-    // Descontar saldo del usuario activo
     usuarioActivo.saldo -= monto;
     actualizarSaldoYMovimientos();
 
-    // Registrar movimiento
     const fecha = new Date().toISOString().split("T")[0];
     usuarioActivo.movimientos.push({
     tipo: `Transferencia a ${aliasDestino}`,
     monto: monto,
     fecha: fecha,
     });
-
     guardarUsuarioEnStorage(usuarioActivo);
-
     Swal.fire({
     icon: "success",
     title: "Transferencia realizada",
@@ -372,7 +362,6 @@ function realizarTransferencia() {
     accionesContainer.innerHTML = "";
 }
 
-// Esperar a que el DOM cargue para mostrar login
 window.addEventListener("DOMContentLoaded", () => {
     mostrarLogin();
 });
